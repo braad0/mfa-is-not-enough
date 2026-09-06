@@ -78,9 +78,9 @@ sequenceDiagram
 The key insight: authentication *happens correctly*. The theft is of the artifact minted **after**
 authentication, the session.
 
-> 🔵 **Blue team.** This is why **number matching** (approving a code in Authenticator) does **not**
-> help against AiTM. The malicious session is minted on the back of an approval the victim made in
-> good faith. Anti-MFA-fatigue is not anti-AiTM. Treat *session hijacking*, not *MFA prompts*, as
+> 🔵 **Blue team.** This is why **number matching** (entering the number shown on the sign-in screen
+> into Authenticator) does **not** help against AiTM. The malicious session is minted on the back of
+> an approval the victim made in good faith. Anti-MFA-fatigue is not anti-AiTM. Treat *session hijacking*, not *MFA prompts*, as
 > the threat.
 
 ---
@@ -206,9 +206,9 @@ sequenceDiagram
     S->>E: Probing within seconds, before any victim is targeted
 ```
 
-**Why:** every publicly-trusted certificate is **mandatorily logged** in append-only
-**Certificate Transparency** logs (the mechanism that stops a CA from issuing certs in secret).
-Scanners watch that feed in real time and pounce on fresh hostnames.
+**Why:** every publicly-trusted certificate is **logged** in append-only **Certificate Transparency**
+logs. Browsers require it (a certificate that is not logged is not trusted), which is what stops a CA
+from issuing certs in secret. Scanners watch that feed in real time and pounce on fresh hostnames.
 
 These were **not** the CA re-checking legitimacy (the CA validates domain control **once**, at
 issuance), and **not** attackers targeting *us* specifically. They were indiscriminate automation
@@ -221,6 +221,8 @@ triggered by CT:
 | `ForestEngine`, `rust_sniffer` | research / hobby crawlers | reconnaissance, indexing |
 | browser-like UAs from cloud IPs | opportunistic bots | hunt fresh login pages |
 | *(silent)* | anti-phishing / brand protection | find phishing infra to take it down |
+
+*Intent is inferred from the user-agent strings and source IPs, not confirmed with each operator.*
 
 You can even find the trail yourself, after the fact, on **[crt.sh](https://crt.sh)**. The hostnames
 are public and permanent.
@@ -293,7 +295,7 @@ first place. AiTM cannot proxy its way around that.
 | Session-cookie theft | session anomalies: impossible travel, new device or ASN mid-session |
 | Stolen-session replay | token reuse from unexpected geo/IP, revoke sessions, enable CAE |
 | Legacy `X-Evilginx` header | unreliable, removed in current builds, do not depend on it |
-| Go/TLS stack fingerprint | JARM / JA3S of the proxy, not removable at compile time |
+| Go/TLS stack fingerprint | JARM / JA3S of the proxy, not moved by a simple recompile |
 
 ---
 
@@ -306,8 +308,9 @@ know them. *No step-by-step recipe is provided.*
   **already gone** from current builds. Auditing the source confirmed it. The only self-identifying
   string that remained was the self-signed CA name in the certificate code, which is irrelevant in
   live mode (the leaf comes from Let's Encrypt) and trivially renamed.
-- **Non-removable fingerprint.** The TLS fingerprint (JARM / JA3S) comes from the Go `crypto/tls`
-  stack, not from a string, so it survives recompilation. That makes it a **robust** blue signal.
+- **Sticky fingerprint.** The TLS fingerprint (JARM / JA3S) comes from the Go `crypto/tls` stack,
+  not from a string. Changing it takes real effort (custom TLS configuration), unlike deleting a
+  header, so a simple recompile does not move it. That makes it a **robust** blue signal.
 - **Operational filters.** Blocking scanner IP ranges, user-agent filtering, and briefly redirecting
   early visitors are all about surviving the CT-driven scan wave of section 4, which is itself the
   proof that the exposure is real.
@@ -320,8 +323,8 @@ know them. *No step-by-step recipe is provided.*
 A complete, working phishlet is a **functional attack artifact**. Publishing one would:
 
 - contradict the entire **defensive** purpose of this writeup;
-- go against evilginx community norms, since the official O365 phishlet was **removed from the
-  upstream repo in 2021** precisely to raise the barrier;
+- go against evilginx community norms, since Kuba Gretzky **stopped bundling working phishlets for
+  major services** and pulled them from the upstream repository, precisely to raise the barrier;
 - add **zero** defensive value that the *concept* (section 2.1) does not already convey.
 
 So this repository documents the **class of problem and its lesson**, not a copy-paste weapon. That
